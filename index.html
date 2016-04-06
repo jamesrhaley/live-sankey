@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<!-- © 2016 James Haley for licencing contact at james.r.haley@gmail.com -->
+<html>
+<head>
+<!-- <title>D3 - Data Driven Documents</title> -->
+
+    <style type="text/css">
+        
+        body {
+            padding-top: 20px;
+            padding-left: 15px;
+            font-family: Arial, Helvetica, sans-serif;
+            width:750px;
+            margin-left:auto;
+            margin-right:auto;
+        }
+        h1,h2,h3,h4,h5,p{
+            margin: 0;
+        }
+        p{
+            font-size: .8em;
+        }
+        input[type=range] {
+            /*removes default webkit styles*/
+            -webkit-appearance: none;
+            
+            /*fix for FF unable to apply focus style bug */
+            border: 1px solid white;
+            
+            /*required for proper track sizing in FF*/
+            width: 200px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 200px;
+            height: 5px;
+            background: #ddd;
+            border: none;
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            border: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #AAB8C2;
+            margin-top: -4px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]:focus::-webkit-slider-runnable-track {
+            background: #ccc;
+        }
+
+        input[type=range]::-moz-range-track {
+            width: 200px;
+            height: 5px;
+            background: #ddd;
+            border: none;
+            border-radius: 3px;
+        }
+        input[type=range]::-moz-range-thumb {
+            border: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            border:1px solid #bcc5d1;
+            background: #AAB8C2;
+        }
+
+        /*hide the outline behind the border*/
+        input[type=range]:-moz-focusring{
+            outline: 1px solid white;
+            outline-offset: -1px;
+        }
+
+        input[type=range]::-ms-track {
+            width: 200px;
+            height: 5px;
+            
+            /*remove bg colour from the track, we'll use ms-fill-lower and ms-fill-upper instead */
+            background: transparent;
+            
+            /*leave room for the larger thumb to overflow with a transparent border */
+            border-color: transparent;
+            border-width: 6px 0;
+
+            /*remove default tick marks*/
+            color: transparent;
+        }
+        input[type=range]::-ms-fill-lower {
+            background: #777;
+            border-radius: 10px;
+        }
+        input[type=range]::-ms-fill-upper {
+            background: #ddd;
+            border-radius: 10px;
+        }
+        input[type=range]::-ms-thumb {
+            border: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            border:1px solid #bcc5d1;
+            background: #D1E3EF;
+        }
+        input[type=range]:focus::-ms-fill-lower {
+            background: #888;
+        }
+        input[type=range]:focus::-ms-fill-upper {
+            background: #ccc;
+        }
+        #controls {
+            display: inline-block;
+            width: 500px;
+        }
+        #buttons {
+            margin-top: 5px;
+            float: right;
+            display: inline-block;
+            width: 250px;
+        }
+        button {
+            -moz-box-shadow: 0px 0px 0px 0px #bee2f9;
+            -webkit-box-shadow: 0px 0px 0px 0px #bee2f9;
+            box-shadow: 0px 0px 0px 0px #bee2f9;
+            background-color:#E5EEEF;
+            -moz-border-radius:6px;
+            -webkit-border-radius:6px;
+            border-radius:6px;
+            border:1px solid #bcc5d1;
+            display:inline-block;
+            cursor:pointer;
+            color:#000000;
+            font-family:Arial;
+            font-size:12px;
+            padding:12px 8px;
+            text-decoration:none;
+            float: right;
+            width: 70px;
+            margin-left: 5px
+        }
+        button:hover {
+            background-color:#D1E3EF;
+        }
+        button:active {
+            position:relative;
+            top:1px;
+        }
+        button:focus {
+          outline: none;
+        }
+
+        .filterbox {
+            margin-bottom: 5px;
+            margin-top: 5px;
+        }
+        .node {
+            cursor: pointer;
+            shape-rendering: crispEdges;
+            stroke-width: 1;
+        }
+        .node:hover {
+            opacity: 0.8;
+        }
+
+        .label {
+            pointer-events: none;
+            text-shadow: 0 1px 0 #fff;
+        }
+
+        .link {
+            cursor: pointer;
+        }
+
+        .link:hover {
+            opacity: 0.5;
+        }
+
+        .theTip {
+            position: absolute;
+            text-align: center;
+            opacity: 0;
+            font: 16px helvetica;
+            color: #2A2B2B;
+            line-height: 18px;
+            width: 200px;
+            height: auto;
+            padding: 10px;
+            padding-top: 12px;
+            background-color: #FFFFF1;
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 6px;
+            -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+
+        .backgroud{
+            pointer-events: none;
+            font-size: 25px;
+        }
+    </style>
+</head>
+<body>
+<div id="controls"></div>
+<div id='buttons'>
+    <button type="button" class="resetButton">Reset<br>Filters</button>
+    <button type="button" class="unMouseDown">Unmouse<br>Select</button>
+    <!-- <button type="button" class="swap">swap</button> -->
+    <button type="button" class="flatten">Flatten<br>Chart</button>
+</div>
+<div id="chart"></div>
+<div id="blank"></div>
+<p>Prototype built form data from <a href='http://benschmidt.org/jobs/'>http://benschmidt.org/jobs/</a></p>
+
+
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="scripts/d3Promise.js"></script>
+<script src="scripts/build-js.js"></script>
+</body>
+</html>
