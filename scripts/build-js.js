@@ -16760,7 +16760,16 @@ function sumNodeValues(allNodes, allLinks) {
 
 exports.sumNodeValues = sumNodeValues;
 
-},{"../helpers/sharedResource":66}],66:[function(require,module,exports){
+},{"../helpers/sharedResource":67}],66:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var BASE_LOW = exports.BASE_LOW = 2000;
+var BASE_HIGH = exports.BASE_HIGH = 5000;
+
+},{}],67:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -16773,7 +16782,7 @@ exports.indexed = indexed;
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 // © 2016 James Haley for licencing contact at james.r.haley@gmail.com
-// import d3 from 'd3';
+var d3local = exports.d3local = d3;
 
 /**
 * indexed -> takes a list of indices and gets them from a 
@@ -16836,16 +16845,22 @@ var Queue = exports.Queue = function () {
   return Queue;
 }();
 
-var sum = exports.sum = d3.sum;
-var min = exports.min = d3.min;
-var ascending = exports.ascending = d3.ascending;
-var d3nest = exports.d3nest = d3.nest;
+var sum = exports.sum = d3local.sum;
+var min = exports.min = d3local.min;
+var ascending = exports.ascending = d3local.ascending;
+var d3nest = exports.d3nest = d3local.nest;
 
 var source = exports.source = 'source';
 var target = exports.target = 'target';
 
-},{}],67:[function(require,module,exports){
+var pick = exports.pick = function pick(selector) {
+  return document.querySelector(selector);
+};
+
+},{}],68:[function(require,module,exports){
 'use strict';
+
+var _sharedResource = require('./helpers/sharedResource');
 
 var _grizzy = require('grizzy');
 
@@ -16855,28 +16870,19 @@ var _model = require('./adjacencyModel/model');
 
 var _rx = require('rx');
 
-var _core = require('@cycle/core');
-
-var _core2 = _interopRequireDefault(_core);
-
-var _dom = require('@cycle/dom');
+var _resetButton = require('./resetButton');
 
 var _inputFilter = require('./inputFilter');
+
+var _theTip = require('./theTip');
 
 var _Sankey = require('./sankey/Sankey');
 
 var _shapes = require('./shapes/shapes');
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
-// import { promise } from './d3Promise';
-
-// © 2016 James Haley for licencing contact at james.r.haley@gmail.com
-// import d3 from 'd3';
-var dimensions = gz.dimensions;
-// import { blankSVG } from './BlankSVG';
+var dimensions = gz.dimensions; // © 2016 James Haley for licencing contact at james.r.haley@gmail.com
 
 var blankSVG = gz.blankSVG;
 var draw = gz.default.draw;
@@ -16889,7 +16895,7 @@ var SIZE = dimensions({
     height: window.innerHeight * .8,
     margin: { top: 10, right: 30, bottom: 10, left: 20 }
 });
-var svg = blankSVG(d3, SIZE, '#chart');
+var svg = blankSVG(_sharedResource.d3local, SIZE, '#chart');
 
 var FILE = "data.tsv";
 
@@ -16906,7 +16912,7 @@ function modelData(dataStream, flatten) {
 
     return sankey;
 }
-var emptySet = d3.select("body").append("div").attr('class', 'backgroud').style("position", "absolute").style("z-index", "-10").style("opacity", "0").html('No Results, please update filters' + '<br>' + 'ie: change sliders, unmouse select, or reset');
+var emptySet = _sharedResource.d3local.select("body").append("div").attr('class', 'backgroud').style("position", "absolute").style("z-index", "-10").style("opacity", "0").html('No Results, please update filters' + '<br>' + 'ie: change sliders, unmouse select, or reset');
 
 function update(parentObject, sankeyModel) {
     (0, _shapes.makeEmptySet)(emptySet, sankeyModel);
@@ -16924,19 +16930,21 @@ function program(data, flatten) {
 
 //interaction---------------------------------------------------
 // run program and observe async events
+
 var Observable = _rx.Rx.Observable;
-var pick = function pick(selector) {
-    return document.querySelector(selector);
-};
+
 // capture chart
-var getChart = pick('#chart');
+var getChart = (0, _sharedResource.pick)('#chart');
 // var totalValue = 0;
 
 // requst the data and format it
-var request$ = Observable.fromPromise(d3.promise.tsv(FILE)).map(function (each) {
+var request$ = Observable.create(function (observer) {
+    d3.tsv(FILE, function (data) {
+        return observer.next(data);
+    });
+}).map(function (each) {
     return each.map(function (record) {
         // totalValue += +record.count;
-        // console.log(totalValue)
         return {
             value: +record.count,
             diff: +record.diff,
@@ -16965,7 +16973,7 @@ var request$ = Observable.fromPromise(d3.promise.tsv(FILE)).map(function (each) 
 
 //flatten----------------------------------------------------
 var flattenState = 6;
-var flattenButton = pick('.flatten');
+var flattenButton = (0, _sharedResource.pick)('.flatten');
 var flatten$ = Observable.fromEvent(flattenButton, 'click').map(function () {
     if (flattenState === 6) {
         flattenState = 0;
@@ -16992,12 +17000,6 @@ var BASE_MOUSEDOWN_INPUT = {
 
 var BASE_SELECTION = [BASE_SLIDER_INPUT, BASE_MOUSEDOWN_INPUT];
 
-//resetButton-------------------------------------------------------
-var resetButton = pick('.resetButton');
-var resetButton$ = Observable.fromEvent(resetButton, 'click').map(function () {
-    return { type: 'reset' };
-});
-
 //slider------------------------------------------------------------
 //code in inputFilter.js
 var sliderState$ = _inputFilter.inputFilter.sinks.DOM.source.debounce(250).map(function (sink) {
@@ -17009,7 +17011,7 @@ var sliderState$ = _inputFilter.inputFilter.sinks.DOM.source.debounce(250).map(f
 });
 
 //mouse-------------------------------------------------------------
-var unMouseDown = pick('.unMouseDown');
+var unMouseDown = (0, _sharedResource.pick)('.unMouseDown');
 var mouseClick = getChart;
 
 var unMouseDown$ = Observable.fromEvent(unMouseDown, 'click').map(function (evt) {
@@ -17024,7 +17026,7 @@ var mousedown$ = Observable.fromEvent(mouseClick, 'mousedown', function (evt) {
     return evt.target.closest('rect') || evt.target.closest('path') || null;
 }).startWith(null).map(function (mouse) {
     var node = mouse === null ? null : mouse.nodeName;
-    var value = mouse === null ? null : d3.select(mouse).datum();
+    var value = mouse === null ? null : _sharedResource.d3local.select(mouse).datum();
     return {
         type: 'mouse',
         node: node,
@@ -17035,7 +17037,7 @@ var mousedown$ = Observable.fromEvent(mouseClick, 'mousedown', function (evt) {
 var mouseState$ = mousedown$.merge(unMouseDown$);
 
 //merge interactions------------------------------------------------
-var update$ = _rx.Rx.Observable.merge(sliderState$, mouseState$, resetButton$);
+var update$ = _rx.Rx.Observable.merge(sliderState$, mouseState$, _resetButton.resetButton$);
 
 // Scan over these updates to modify the high/low values
 var interaction$ = update$.scan(function (state, update) {
@@ -17074,115 +17076,26 @@ var state$ = Observable.combineLatest(interaction$, request$, function (interact
 
     var mfilter = mouse.node === null ? firstFilter : mouse.node === 'rect' ? rectFilter : mouse.node === 'path' ? linkFilter : firstFilter;
 
-    return data.map(function (each) {
+    var results = data.map(function (each) {
         return each;
     }).filter(function (x) {
         return x.value > slider.low && x.value < slider.high && mfilter(x, mouse.value);
     });
-});
+
+    return results;
+}).distinctUntilChanged();
 
 var finalState$ = Observable.combineLatest(state$, flatten$);
 
-//tooltip---------------------------------------------------------
-
-var UNITS = "People";
-var formatNumber = d3.format(",.0f"); // zero decimal places
-var formatToString = function formatToString(d) {
-    return formatNumber(d) + " " + UNITS;
-};
-
-var tooltip = d3.select("body").append("div").attr('class', 'theTip').style("position", "absolute").style("z-index", "10");
-
-var innerh = window.innerHeight - 225;
-
-var mouseOver = getChart;
-
-var mouseOver$ = Observable.fromEvent(mouseOver, 'mouseover').map(function (evt) {
-    var selected = d3.select(evt.target).datum();
-    if (selected !== undefined) {
-        var cy = evt.clientY;
-        if (cy > innerh) {
-            cy = innerh;
-        }
-        return {
-            target: selected,
-            pageX: evt.pageX,
-            pageY: cy
-        };
-    } else {
-        return {
-            target: '',
-            pageX: evt.pageX,
-            pageY: evt.pageY
-        };
-    }
-}).debounce(100);
-
-function nodeText(object) {
-    return object.name + "<br>" + formatToString(object.value) + ' visable';
-}
-
-function linkText(object) {
-    return object.sourceName + " majors going into " + object.targetName + "<br>" + formatToString(object.value) + " (" + parseFloat((.01 * Math.round(object.diff * 100)).toFixed(2)) + " times as many as expected based on counts)";
-}
-
-function emptyText(object) {
-    return '';
-}
-
-function makeTip(mouse$, tip, stringFucs) {
-    return mouse$.subscribe(function (evt) {
-        var string = function string(d) {
-            if (d.hasOwnProperty('name')) {
-                return stringFucs.nodeText(d);
-            } else if (d.hasOwnProperty('sourceName')) {
-                return stringFucs.linkText(d);
-            } else {
-                return stringFucs.emptyText(d);
-            }
-        };
-        var getstring = string(evt.target);
-
-        tip.style({
-            'opacity': function opacity() {
-                if (getstring === '') {
-                    return 0;
-                } else {
-                    return 1;
-                }
-            },
-            "top": evt.pageY + 20 + "px",
-            "left": evt.pageX + 25 + "px"
-        }).html(getstring);
-    });
-}
-
 //sideffects---------------------------------------------------------
-resetButton$.subscribe(function (x) {
-    var lowInput = pick('.lowInput');
-    var low = pick('.low');
-    var highInput = pick('.highInput');
-    var high = pick('.high');
 
-    pick(".rangePhrase").innerHTML = 'Total Range of weights spans between ' + BASE_LOW + ' to ' + BASE_HIGH;
-
-    lowInput.value = BASE_LOW;
-    low.value = BASE_LOW;
-    highInput.value = BASE_HIGH;
-    high.value = BASE_HIGH;
-});
-
-makeTip(mouseOver$, tooltip, {
-    nodeText: nodeText,
-    linkText: linkText,
-    emptyText: emptyText
-});
+(0, _theTip.callTip)();
 
 finalState$.subscribe(function (data) {
     program(data[0], data[1]);
 });
 
-},{"./adjacencyModel/model":64,"./inputFilter":68,"./sankey/Sankey":69,"./shapes/shapes":75,"@cycle/core":1,"@cycle/dom":2,"grizzy":15,"rx":24}],68:[function(require,module,exports){
+},{"./adjacencyModel/model":64,"./helpers/sharedResource":67,"./inputFilter":69,"./resetButton":70,"./sankey/Sankey":71,"./shapes/shapes":77,"./theTip":78,"grizzy":15,"rx":24}],69:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -17198,50 +17111,56 @@ var _core2 = _interopRequireDefault(_core);
 
 var _dom = require('@cycle/dom');
 
+var _resetButton = require('./resetButton');
+
+var _constants = require('./constants');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var BASE_LOW = 2000; // © 2016 James Haley for licencing contact at james.r.haley@gmail.com
+// import { LabeledInputSlider } from './LabeledInputSlider';
 
-var BASE_HIGH = 5000;
+function intent(DOM) {
+  var mapAndStamp = function mapAndStamp(from, type, bounce) {
+    return DOM.select(from).events('input').debounce(bounce).map(function (ev) {
+      return {
+        type: type,
+        value: ev.target.value,
+        time: ev.timeStamp
+      };
+    });
+  };
 
-function intent(DOMSource) {
-  var inputlow$ = DOMSource.select('.lowInput').events('input').debounce(500).map(function (ev) {
+  var slidelow$ = mapAndStamp('.lowSlider', 'low', 0);
+  var inputlow$ = mapAndStamp('.lowInput', 'low', 500);
+
+  var slidehigh$ = mapAndStamp('.highSlider', 'high', 0);
+  var inputhigh$ = mapAndStamp('.highInput', 'high', 500);
+
+  var changelow$ = _rx.Observable.merge(slidelow$, inputlow$);
+  var changehigh$ = _rx.Observable.merge(slidehigh$, inputhigh$);
+
+  return { changelow$: changelow$, changehigh$: changehigh$ };
+} // © 2016 James Haley for licencing contact at james.r.haley@gmail.com
+
+var mapExternalWithTime = function mapExternalWithTime(from, baseValue) {
+  return from.map(function (ev) {
     return {
-      value: ev.target.value,
+      type: ev.type,
+      value: baseValue,
       time: ev.timeStamp
     };
   });
+};
 
-  var changelow$ = DOMSource.select('.low').events('input').map(function (ev) {
-    return {
-      value: ev.target.value,
-      time: ev.timeStamp
-    };
-  });
+function model(changelow$, changehigh$, external) {
+  var resetlow$ = mapExternalWithTime(external, _constants.BASE_LOW);
+  var resetHigh$ = mapExternalWithTime(external, _constants.BASE_HIGH);
 
-  var inputhigh$ = DOMSource.select('.highInput').events('input').debounce(500).map(function (ev) {
-    return {
-      value: ev.target.value,
-      time: ev.timeStamp
-    };
-  });
+  changelow$ = _rx.Observable.merge(changelow$, resetlow$);
 
-  var changehigh$ = DOMSource.select('.high').events('input').map(function (ev) {
-    return {
-      value: ev.target.value,
-      time: ev.timeStamp
-    };
-  });
+  changehigh$ = _rx.Observable.merge(changehigh$, resetHigh$);
 
-  return { changelow$: changelow$, changehigh$: changehigh$, inputlow$: inputlow$, inputhigh$: inputhigh$ };
-}
-
-function model(changelow$, changehigh$, inputlow$, inputhigh$) {
-  var low$ = _rx.Rx.Observable.merge(changelow$, inputlow$);
-  var high$ = _rx.Rx.Observable.merge(changehigh$, inputhigh$);
-
-  return _rx.Rx.Observable.combineLatest(low$.startWith({ time: 0, value: BASE_LOW }), high$.startWith({ time: 0, value: BASE_HIGH }), function (low, high) {
-
+  return _rx.Observable.combineLatest(changelow$.startWith({ time: 0, value: _constants.BASE_LOW }), changehigh$.startWith({ time: 0, value: _constants.BASE_HIGH }), function (low, high) {
     var h = high.value;
     var w = low.value;
     var current = high.time > low.time ? 'high' : 'low';
@@ -17262,12 +17181,12 @@ function model(changelow$, changehigh$, inputlow$, inputhigh$) {
 
 function view(state$) {
   return state$.map(function (state) {
-    return (0, _dom.div)([(0, _dom.div)('.filterbox', [(0, _dom.label)('Low Edge Filter: '), (0, _dom.input)('.low', {
+    return (0, _dom.div)([(0, _dom.div)('.filterbox', [(0, _dom.label)('Low Edge Filter: '), (0, _dom.input)('.lowSlider', {
       type: 'range',
       min: 3,
       max: 665236,
       value: state.low
-    }), (0, _dom.input)('.lowInput', { value: state.low })]), (0, _dom.div)('.filterbox', [(0, _dom.label)('High Edge Filter:'), (0, _dom.input)('.high', {
+    }), (0, _dom.input)('.lowInput', { value: state.low })]), (0, _dom.div)('.filterbox', [(0, _dom.label)('High Edge Filter:'), (0, _dom.input)('.highSlider', {
       type: 'range',
       min: 5,
       max: 665238,
@@ -17282,10 +17201,8 @@ function main(sources) {
 
   var changelow$ = _intent.changelow$;
   var changehigh$ = _intent.changehigh$;
-  var inputlow$ = _intent.inputlow$;
-  var inputhigh$ = _intent.inputhigh$;
 
-  var state$ = model(changelow$, changehigh$, inputlow$, inputhigh$);
+  var state$ = model(changelow$, changehigh$, sources.external);
   var vtree$ = view(state$);
   return {
     DOM: vtree$
@@ -17295,14 +17212,45 @@ function main(sources) {
 // exit$.subscribe(x=> console.log(x));
 
 var drivers = {
-  DOM: (0, _dom.makeDOMDriver)('#controls')
+  DOM: (0, _dom.makeDOMDriver)('#controls'),
+  external: function external() {
+    return _resetButton.resetButton$;
+  }
 };
 
 var inputFilter = _core2.default.run(main, drivers);
 
 exports.inputFilter = inputFilter;
 
-},{"@cycle/core":1,"@cycle/dom":2,"rx":24}],69:[function(require,module,exports){
+},{"./constants":66,"./resetButton":70,"@cycle/core":1,"@cycle/dom":2,"rx":24}],70:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.resetButton$ = undefined;
+
+var _rx = require('rx');
+
+var _constants = require('./constants');
+
+var _sharedResource = require('./helpers/sharedResource');
+
+console.log();
+//resetButton-------------------------------------------------------
+var resetButton = (0, _sharedResource.pick)('.resetButton');
+var resetButton$ = _rx.Observable.fromEvent(resetButton, 'click').map(function (evt) {
+    return {
+        type: 'reset',
+        low: _constants.BASE_LOW,
+        high: _constants.BASE_HIGH,
+        time: evt.timeStamp
+    };
+});
+
+exports.resetButton$ = resetButton$;
+
+},{"./constants":66,"./helpers/sharedResource":67,"rx":24}],71:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); // © 2016 James Haley for licencing contact at james.r.haley@gmail.com
@@ -17469,7 +17417,7 @@ var Sankey = function () {
 
 exports.Sankey = Sankey;
 
-},{"./depthsNodeAndLink":71,"./linkXandY":72,"./nodeBreadths":73,"./renderLinksDAttr":74}],70:[function(require,module,exports){
+},{"./depthsNodeAndLink":73,"./linkXandY":74,"./nodeBreadths":75,"./renderLinksDAttr":76}],72:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -17564,7 +17512,7 @@ function breadthFirstLayout(graph) {
 
 exports.breadthFirstLayout = breadthFirstLayout;
 
-},{"../helpers/sharedResource":66}],71:[function(require,module,exports){
+},{"../helpers/sharedResource":67}],73:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -17655,7 +17603,7 @@ function depthsNodeAndScaleLinkAndNode(allNodes, allLinks, dimensions, padding, 
 
 exports.depthsNodeAndScaleLinkAndNode = depthsNodeAndScaleLinkAndNode;
 
-},{"../helpers/sharedResource":66}],72:[function(require,module,exports){
+},{"../helpers/sharedResource":67}],74:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -17710,7 +17658,7 @@ function linkXandY(allLinks, allNodes, nodeWidth) {
 
 exports.linkXandY = linkXandY;
 
-},{"../helpers/sharedResource":66}],73:[function(require,module,exports){
+},{"../helpers/sharedResource":67}],75:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -17762,7 +17710,7 @@ function nodeBreadths(allNodes, allLinks, nodeWidth, chartWidth) {
 
 exports.nodeBreadths = nodeBreadths;
 
-},{"../helpers/sharedResource":66,"./breadthFirstLayout":70}],74:[function(require,module,exports){
+},{"../helpers/sharedResource":67,"./breadthFirstLayout":72}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -17822,31 +17770,33 @@ function renderLinksDAttr(alllinks, curve) {
 
 exports.renderLinksDAttr = renderLinksDAttr;
 
-},{}],75:[function(require,module,exports){
-"use strict";
+},{}],77:[function(require,module,exports){
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.makeEmptySet = exports.makeLabel = exports.makeRects = exports.makeLink = undefined;
 
-var _grizzy = require("grizzy");
+var _sharedResource = require('../helpers/sharedResource');
+
+var _grizzy = require('grizzy');
 
 var _grizzy2 = _interopRequireDefault(_grizzy);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var draw = _grizzy2.default.draw; // © 2016 James Haley for licencing contact at james.r.haley@gmail.com
-// import d3 from 'd3';
+// © 2016 James Haley for licencing contact at james.r.haley@gmail.com
 
+var draw = _grizzy2.default.draw;
 var BASE_OPACITY = 0.2;
-var color = d3.scale.category20();
+var color = _sharedResource.d3local.scale.category20();
 var OFFSET = 300;
 var MAIN_TRANSITION_TIME = 1000;
 var duration = 0;
 var durationLable = 0;
 
-var linkColor = d3.scale.log().domain([.1, 1, 10]).range(["red", "grey", "blue"]);
+var linkColor = _sharedResource.d3local.scale.log().domain([.1, 1, 10]).range(["red", "grey", "blue"]);
 
 function makeLabel(parentObject, sankeyModel, width) {
   var rectWidth = sankeyModel.nodeWidth();
@@ -17918,7 +17868,6 @@ function makeLabel(parentObject, sankeyModel, width) {
 function makeEmptySet(parentObject, sankeyModel) {
   var data = sankeyModel.emptySet(),
       isopaque = function isopaque(d) {
-    console.log('happened');
     if (!d[0].empty) {
       return 0;
     } else {
@@ -17926,7 +17875,6 @@ function makeEmptySet(parentObject, sankeyModel) {
     }
   };
   var option = isopaque(data);
-  console.log(data);
   parentObject.style({
     'opacity': isopaque(data),
     "top": "200px"
@@ -18034,4 +17982,97 @@ exports.makeRects = makeRects;
 exports.makeLabel = makeLabel;
 exports.makeEmptySet = makeEmptySet;
 
-},{"grizzy":15}]},{},[67]);
+},{"../helpers/sharedResource":67,"grizzy":15}],78:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.callTip = undefined;
+
+var _sharedResource = require('./helpers/sharedResource');
+
+var _rx = require('rx');
+
+//tooltip---------------------------------------------------------
+
+var UNITS = "People";
+var formatNumber = _sharedResource.d3local.format(",.0f"); // zero decimal places
+var formatToString = function formatToString(d) {
+    return formatNumber(d) + " " + UNITS;
+};
+
+var tooltip = _sharedResource.d3local.select("body").append("div").attr('class', 'theTip').style("position", "absolute").style("z-index", "10");
+
+var innerh = window.innerHeight - 225;
+
+var mouseOver = (0, _sharedResource.pick)('#chart');
+
+var mouseOver$ = _rx.Observable.fromEvent(mouseOver, 'mouseover').map(function (evt) {
+    var selected = _sharedResource.d3local.select(evt.target).datum();
+    if (selected !== undefined) {
+        var cy = evt.clientY;
+        if (cy > innerh) {
+            cy = innerh;
+        }
+        return {
+            target: selected,
+            pageX: evt.pageX,
+            pageY: cy
+        };
+    } else {
+        return {
+            target: '',
+            pageX: evt.pageX,
+            pageY: evt.pageY
+        };
+    }
+}).debounce(100);
+
+function nodeText(object) {
+    return object.name + "<br>" + formatToString(object.value) + ' visable';
+}
+
+function linkText(object) {
+    return object.sourceName + " majors going into " + object.targetName + "<br>" + formatToString(object.value) + " (" + parseFloat((.01 * Math.round(object.diff * 100)).toFixed(2)) + " times as many as expected based on counts)";
+}
+
+function emptyText(object) {
+    return '';
+}
+
+function makeTip(mouse$, tip, stringFucs) {
+    return function () {
+        return mouse$.subscribe(function (evt) {
+            var string = function string(d) {
+                if (d.hasOwnProperty('name')) {
+                    return stringFucs.nodeText(d);
+                } else if (d.hasOwnProperty('sourceName')) {
+                    return stringFucs.linkText(d);
+                } else {
+                    return stringFucs.emptyText(d);
+                }
+            };
+            var getstring = string(evt.target);
+
+            tip.style({
+                'opacity': function opacity() {
+                    if (getstring === '') {
+                        return 0;
+                    } else {
+                        return 1;
+                    }
+                },
+                "top": evt.pageY + 20 + "px",
+                "left": evt.pageX + 25 + "px"
+            }).html(getstring);
+        });
+    };
+}
+var callTip = exports.callTip = makeTip(mouseOver$, tooltip, {
+    nodeText: nodeText,
+    linkText: linkText,
+    emptyText: emptyText
+});
+
+},{"./helpers/sharedResource":67,"rx":24}]},{},[68]);
